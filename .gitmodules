@@ -1,4 +1,4 @@
 [submodule "iced"]
 	path = iced
 	url = https://github.com/Gerd-Augsburg/iced.git
-	branch = default_to_modified_key
+	branch = master
