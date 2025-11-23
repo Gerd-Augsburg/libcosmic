@@ -2,3 +2,6 @@
 	path = iced
 	url = https://github.com/Gerd-Augsburg/iced.git
 	branch = master
+[submodule "icon-theme"]
+	path = cosmic-icons
+	url = https://github.com/pop-os/cosmic-icons

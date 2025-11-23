@@ -125,7 +125,9 @@ impl<'a, Message: Clone + 'static> From<Dialog<'a, Message>> for Element<'a, Mes
                 content_col = content_col
                     .push(widget::vertical_space().height(Length::Fixed(space_xxs.into())));
             }
-            content_col = content_col.push(widget::text::body(body));
+            content_col = content_col.push(
+                widget::container(widget::scrollable(widget::text::body(body))).max_height(300.),
+            );
             should_space = true;
         }
         for control in dialog.controls {
@@ -156,8 +158,7 @@ impl<'a, Message: Clone + 'static> From<Dialog<'a, Message>> for Element<'a, Mes
         }
 
         let mut container = widget::container(
-            widget::column::with_children(vec![content_row.into(), button_row.into()])
-                .spacing(space_l),
+            widget::column::with_children([content_row.into(), button_row.into()]).spacing(space_l),
         )
         .class(style::Container::Dialog)
         .padding(space_m)

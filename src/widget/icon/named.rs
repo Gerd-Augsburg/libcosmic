@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 use super::{Handle, Icon};
-use std::{borrow::Cow, path::PathBuf, sync::Arc};
+use std::{borrow::Cow, ffi::OsStr, path::PathBuf, sync::Arc};
 
 #[derive(Debug, Clone, Default, Hash)]
 /// Fallback icon to use if the icon was not found.
@@ -41,13 +41,14 @@ pub struct Named {
 impl Named {
     pub fn new(name: impl Into<Arc<str>>) -> Self {
         let name = name.into();
+        let symbolic = name.ends_with("-symbolic");
         Self {
-            symbolic: name.ends_with("-symbolic"),
+            symbolic,
             name,
             fallback: Some(IconFallback::Default),
             size: None,
             scale: None,
-            prefer_svg: false,
+            prefer_svg: symbolic,
         }
     }
 
@@ -115,9 +116,21 @@ impl Named {
 
     #[inline]
     pub fn handle(self) -> Handle {
+        let name = self.name.clone();
         Handle {
             symbolic: self.symbolic,
-            data: super::Data::Name(self),
+            data: if let Some(path) = self.path() {
+                if path.extension().is_some_and(|ext| ext == OsStr::new("svg")) {
+                    super::Data::Svg(iced_core::svg::Handle::from_path(path))
+                } else {
+                    super::Data::Image(iced_core::image::Handle::from_path(path))
+                }
+            } else {
+                super::bundle::get(&name).unwrap_or_else(|| {
+                    let bytes: &'static [u8] = &[];
+                    super::Data::Svg(iced_core::svg::Handle::from_memory(bytes))
+                })
+            },
         }
     }
 

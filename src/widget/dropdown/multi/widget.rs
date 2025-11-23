@@ -230,10 +230,6 @@ impl<Item: Clone + PartialEq + 'static> State<Item> {
     pub fn new() -> Self {
         Self {
             icon: match icon::from_name("pan-down-symbolic").size(16).handle().data {
-                icon::Data::Name(named) => named
-                    .path()
-                    .filter(|path| path.extension().is_some_and(|ext| ext == OsStr::new("svg")))
-                    .map(iced_core::svg::Handle::from_path),
                 icon::Data::Svg(handle) => Some(handle),
                 icon::Data::Image(_) => None,
             },
@@ -432,44 +428,46 @@ pub fn overlay<'a, S: AsRef<str>, Message: 'a, Item: Clone + PartialEq + 'static
                 };
 
             let mut desc_count = 0;
-            selections
-                .elements()
-                .map(|element| match element {
-                    super::menu::OptionElement::Description(desc) => {
-                        let paragraph = if state.descriptions.len() > desc_count {
-                            &mut state.descriptions[desc_count]
-                        } else {
-                            state.descriptions.push(crate::Plain::default());
-                            state.descriptions.last_mut().unwrap()
-                        };
-                        desc_count += 1;
-                        measure(desc.as_ref(), paragraph, description_line_height)
-                    }
+            padding.horizontal().mul_add(
+                2.0,
+                selections
+                    .elements()
+                    .map(|element| match element {
+                        super::menu::OptionElement::Description(desc) => {
+                            let paragraph = if state.descriptions.len() > desc_count {
+                                &mut state.descriptions[desc_count]
+                            } else {
+                                state.descriptions.push(crate::Plain::default());
+                                state.descriptions.last_mut().unwrap()
+                            };
+                            desc_count += 1;
+                            measure(desc.as_ref(), paragraph, description_line_height)
+                        }
 
-                    super::menu::OptionElement::Option((option, item)) => {
-                        let selection_index = state.selections.iter().position(|(i, _)| i == item);
+                        super::menu::OptionElement::Option((option, item)) => {
+                            let selection_index =
+                                state.selections.iter().position(|(i, _)| i == item);
 
-                        let selection_index = match selection_index {
-                            Some(index) => index,
-                            None => {
-                                state
-                                    .selections
-                                    .push((item.clone(), crate::Plain::default()));
-                                state.selections.len() - 1
-                            }
-                        };
+                            let selection_index = match selection_index {
+                                Some(index) => index,
+                                None => {
+                                    state
+                                        .selections
+                                        .push((item.clone(), crate::Plain::default()));
+                                    state.selections.len() - 1
+                                }
+                            };
 
-                        let paragraph = &mut state.selections[selection_index].1;
+                            let paragraph = &mut state.selections[selection_index].1;
 
-                        measure(option.as_ref(), paragraph, text_line_height)
-                    }
+                            measure(option.as_ref(), paragraph, text_line_height)
+                        }
 
-                    super::menu::OptionElement::Separator => 1.0,
-                })
-                .fold(0.0, |next, current| current.max(next))
-                + gap
+                        super::menu::OptionElement::Separator => 1.0,
+                    })
+                    .fold(0.0, |next, current| current.max(next)),
+            ) + gap
                 + 16.0
-                + (padding.horizontal() * 2.0)
         })
         .padding(padding)
         .text_size(text_size);
@@ -521,8 +519,8 @@ pub fn draw<'a, S, Item: Clone + PartialEq + 'static>(
         style.background,
     );
 
-    if let Some(handle) = state.icon.clone() {
-        let svg_handle = iced_core::Svg::new(handle).color(style.text_color);
+    if let Some(handle) = state.icon.as_ref() {
+        let svg_handle = iced_core::Svg::new(handle.clone()).color(style.text_color);
         svg::Renderer::draw_svg(
             renderer,
             svg_handle,
